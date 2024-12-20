@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sanctuary of Memory</title>
+    <link rel="stylesheet" href="style.css"></link>
+    <link rel="script" href="script.js"></link>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            overflow: auto;
+            position: relative;
+            min-height: 100vh;
+            min-width: 100vw;
+            transition: background-image 0.5s ease-in-out;
+        }
+
+        #scroll-container {
+            position: relative;
+            width: 5000px;
+            height: 5000px;
+        }
+
+        header {
+            background-color: transparent;
+            color: #fff;
+            text-shadow: 0 0 12px #ff67de;
+            padding: 2rem;
+            text-align: center;
+            font-size: 2rem;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .input-container {
+            margin-top: 80px;
+            text-align: center;
+            padding: 1rem;
+            z-index: 1000;
+        }
+
+        textarea {
+            width: 80%;
+            max-width: 500px;
+            height: 100px;
+            margin-bottom: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 1rem;
+            resize: none;
+        }
+
+        button {
+            background-color: transparent;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            text-shadow: 0 0 12px #fff;
+        }
+
+        .memory {
+            position: absolute;
+            font-size: 1.2rem;
+            background-color: rgba(255, 255, 255, 0.8);
+            color: #333;
+            padding: 10px 15px;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgb(255, 255, 255);
+            white-space: normal;
+            max-width: 300px;
+            word-wrap: break-word;
+            animation: fadeInMove 1.5s ease-in-out;
+        }
+
+        .memory .delete-button {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: transparent;
+            color: black;
+            border: none;
+            width: 20px;
+            height: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: text-shadow 0.3s ease-in-out;
+        }
+
+        .memory .delete-button:hover {
+            text-shadow: 0 0 12px #ff0000;
+        }
+
+        
+
+        .scroll-to-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            color: rgb(251, 136, 255);
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 50px;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .scroll-to-top:hover {
+            color: rgb(51, 255, 143);
+            box-shadow: 0 4px 8px rgb(255, 255, 255);
+            transform: scale(1.1);
+        }
+
+        @keyframes fadeInMove {
+            from {
+                opacity: 0;
+                transform: translateY(50px) scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        #youtube-player {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="youtube-player">
+        <iframe width="0" height="0" src="https://www.youtube.com/embed/W1SoxBMZyCk?autoplay=1&loop=1&playlist=W1SoxBMZyCk" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    </div>
+
+    <header>
+        Sanctuary of Memory
+    </header>
+
+    <div class="input-container" id="inputContainer">
+        <textarea id="memoryInput" placeholder="당신의 기억을 입력하세요..."></textarea><br>
+        <button id="saveButton">저장하기</button>
+    </div>
+
+    <div id="scroll-container"></div>
+
+    <button class="scroll-to-top" onclick="scrollToInputCenter()">go to save your memory</button>
+
+    <script>
+        const memories = []; // 저장된 텍스트 요소의 좌표 및 크기 목록
+        
+
+        // 로컬 스토리지에서 기억 불러오기
+        window.onload = function() {
+            console.log("로컬 스토리지에서 기억을 불러오는 중...");
+            setRandomBackground();
+
+            const savedMemories = JSON.parse(localStorage.getItem('memories')) || [];
+            console.log("불러온 기억:", savedMemories);
+            savedMemories.forEach(memory => {
+                displayMemory(memory.text, memory.x, memory.y, false);
+            });
+        };
+
+        // 배경 이미지 배열
+        const backgroundImages = [
+            "https://i0.wp.com/lifewellwandered.com/wp-content/uploads/2020/06/gloucester-cathedral-cloisters-4-scaled.jpg?resize=700%2C537&ssl=11",
+            "https://i.pinimg.com/736x/5b/8e/06/5b8e0694947ba3bc576302d3874305a5.jpg",
+            "https://i0.wp.com/alittlebithuman.com/wp-content/uploads/2021/06/5179229-scaled.jpg?fit=2560%2C1685&ssl=",
+            "https://i.pinimg.com/736x/ef/7a/5c/ef7a5c68e5eee06bd855941c07dc5e0c.jpg",
+            "https://i.pinimg.com/736x/a2/01/63/a201633bc2dc4e700e019501a6313253.jpg"
+        ];
+
+        // 랜덤 배경 설정
+        function setRandomBackground() {
+            const randomIndex = Math.floor(Math.random() * backgroundImages.length);
+            const selectedImage = backgroundImages[randomIndex];
+            console.log("랜덤 배경 설정:", selectedImage);
+            document.body.style.backgroundImage = `url(${selectedImage})`;
+        }
+
+        
+        // 저장 버튼 클릭 이벤트
+        document.getElementById('saveButton').addEventListener('click', function() {
+            console.log("저장 버튼 클릭");
+            const memoryInput = document.getElementById('memoryInput');
+            const text = memoryInput.value;
+
+            if (text.trim() !== "") {
+                console.log("입력된 기억:", text);
+                const formattedText = formatText(text, 20);
+                console.log("포맷된 기억:", formattedText);
+
+                const position = getNonOverlappingPosition();
+                console.log("텍스트 위치:", position);
+
+                displayMemory(formattedText, position.x, position.y, true);
+                memoryInput.value = "";
+            } else {
+                alert("기억을 입력해주세요!");
+            }
+        });
+
+        // 화면에 텍스트 표시
+        function displayMemory(text, x, y, saveToLocal) {
+            console.log("화면에 기억 표시:", text, x, y);
+            const memory = document.createElement('div');
+            memory.classList.add('memory');
+            memory.textContent = text;
+
+            const deleteButton = document.createElement('button');
+            deleteButton.classList.add('delete-button');
+            deleteButton.textContent = 'X';
+            deleteButton.onclick = () => removeMemory(memory, text);
+
+            memory.appendChild(deleteButton);
+
+            memory.style.left = `${x}px`;
+            memory.style.top = `${y}px`;
+
+            document.getElementById('scroll-container').appendChild(memory);
+
+            const boundingBox = memory.getBoundingClientRect();
+            console.log("기억의 크기 및 위치:", boundingBox);
+            memories.push({
+                x,
+                y,
+                width: boundingBox.width,
+                height: boundingBox.height,
+            });
+
+            if (saveToLocal) {
+                saveMemoryToLocalStorage(text, x, y);
+            }
+
+            adjustScrollContainer();
+        }
+
+        // 텍스트 삭제
+        function removeMemory(memoryElement, text) {
+            console.log("기억 삭제:", text);
+            memoryElement.remove();
+
+            const savedMemories = JSON.parse(localStorage.getItem('memories')) || [];
+            const updatedMemories = savedMemories.filter(memory => memory.text !== text);
+            console.log("업데이트된 로컬 스토리지 기억:", updatedMemories);
+            localStorage.setItem('memories', JSON.stringify(updatedMemories));
+
+            const memoryIndex = memories.findIndex(memory => memory.text === text);
+            if (memoryIndex !== -1) {
+                memories.splice(memoryIndex, 1);
+            }
+
+            adjustScrollContainer();
+        }
+
+        // 텍스트 포맷팅: 한 줄에 20자 제한
+        function formatText(text, limit) {
+            const words = text.split(' ');
+            let formattedText = '';
+            let currentLine = '';
+
+            words.forEach(word => {
+                if ((currentLine + word).length > limit) {
+                    formattedText += currentLine + '\n';
+                    currentLine = word + ' ';
+                } else {
+                    currentLine += word + ' ';
+                }
+            });
+
+            formattedText += currentLine.trim();
+            console.log("포맷된 텍스트:", formattedText);
+            return formattedText;
+        }
+
+        // 겹침 방지 및 적절한 위치 계산
+        function getNonOverlappingPosition(maxAttempts = 100) {
+            const textWidth = 300;
+            const textHeight = 100;
+            let x, y, overlap;
+            let attempts = 0;
+
+            do {
+                overlap = false;
+                x = Math.random() * 5000; // 확장된 컨테이너 기준 위치
+                y = Math.random() * 5000;
+
+                overlap = isOverlapping(x, y, textWidth, textHeight);
+
+                attempts++;
+                if (attempts > maxAttempts) {
+                    console.warn("충돌 감지: 새 위치를 찾는 데 너무 많은 시도가 필요합니다.");
+                    break;
+                }
+            } while (overlap);
+
+            console.log("최종 위치 결정:", { x, y });
+            return { x, y };
+        }
+
+        // 충돌 감지 함수
+        function isOverlapping(x, y, width, height, padding = 20) {
+            for (let memory of memories) {
+                if (
+                    x < memory.x + memory.width + padding &&
+                    x + width > memory.x - padding &&
+                    y < memory.y + memory.height + padding &&
+                    y + height > memory.y - padding
+                ) {
+                    console.log("기존 기억과 겹침:", memory);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // 메모리를 로컬 스토리지에 저장
+        function saveMemoryToLocalStorage(text, x, y) {
+            console.log("로컬 스토리지에 기억 저장:", text, x, y);
+            const savedMemories = JSON.parse(localStorage.getItem('memories')) || [];
+            savedMemories.push({ text, x, y });
+            localStorage.setItem('memories', JSON.stringify(savedMemories));
+        }
+
+        // 스크롤 컨테이너 크기 조정
+        function adjustScrollContainer() {
+            const container = document.getElementById('scroll-container');
+
+            const maxX = Math.max(...memories.map(memory => memory.x + memory.width), 5000);
+            const maxY = Math.max(...memories.map(memory => memory.y + memory.height), 5000);
+
+            container.style.width = `${maxX}px`;
+            container.style.height = `${maxY}px`;
+
+            console.log("스크롤 컨테이너 크기 조정 완료:", { width: container.style.width, height: container.style.height });
+        }
+
+        // 텍스트 입력 박스가 있는 맨 위 가운데로 이동
+        function scrollToInputCenter() {
+            const inputContainer = document.getElementById('inputContainer');
+            inputContainer.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+        }
+        
+    </script>
+</body>
+</html>
